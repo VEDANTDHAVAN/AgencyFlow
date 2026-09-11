@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  PROJECT_MANAGER
+  DEVELOPER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ActivityType {
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_STATUS_CHANGED
+  TASK_ASSIGNED
+  PROJECT_CREATED
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_IN_REVIEW
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdProjects  Project[]          @relation("ProjectCreator")
+  assignedTasks    Task[]             @relation("TaskDeveloper")
+  activities       Activity[]
+  notifications    Notification[]
+  refreshTokens    RefreshToken[]
+  statusHistories  TaskStatusHistory[]
+
+  @@index([role])
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  company   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  clientId    String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  creator   User   @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  tasks     Task[]
+  activities Activity[]
+
+  @@index([createdById])
+  @@index([clientId])
+}
+
+model Task {
+  id                  String       @id @default(uuid())
+  title               String
+  description         String?
+  status              TaskStatus   @default(TODO)
+  priority            TaskPriority @default(MEDIUM)
+  dueDate             DateTime?
+  projectId           String
+  assignedDeveloperId String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  project           Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedDeveloper User?               @relation("TaskDeveloper", fields: [assignedDeveloperId], references: [id], onDelete: SetNull)
+  statusHistory     TaskStatusHistory[]
+  activities        Activity[]
+
+  @@index([projectId])
+  @@index([assignedDeveloperId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+model TaskStatusHistory {
+  id          String     @id @default(uuid())
+  taskId      String
+  changedById String
+  fromStatus  TaskStatus?
+  toStatus    TaskStatus
+  createdAt   DateTime   @default(now())
+
+  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedBy User @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([taskId, createdAt])
+}
+
+model Activity {
+  id        String       @id @default(uuid())
+  projectId String
+  taskId    String?
+  actorId   String
+  type      ActivityType
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime     @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task    Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor   User    @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([projectId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([actorId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  projectId String?
+  taskId    String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
