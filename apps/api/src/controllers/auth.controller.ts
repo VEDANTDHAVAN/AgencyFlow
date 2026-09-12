@@ -83,3 +83,53 @@ export async function me(
 
   return res.json({ user });
 }
+
+export async function refresh(
+  req: Request, res: Response,
+) {
+  const refreshToken = req.cookies.refreshToken;
+
+  if(!refreshToken) {
+    return res.status(401).json({
+      error: {
+        code: "INVALID_REFRESH_TOKEN",
+        message: "Refresh token required!",
+      },
+    });
+  }
+
+  try {
+    const result = await authService.refresh(refreshToken);
+
+    res.cookie("refreshToken", result.refreshToken, {
+      httpOnly: true, secure: process.env.NODE_ENV === "production",
+      sameSite: "lax", path: "/auth", maxAge: 7*24*60*60*1000,
+    });
+
+    return res.json({
+      accessToken: result.accessToken,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      error: {
+        code: "INVALID_REFRESH_TOKEN", 
+        message: "Invalid or expired refresh token",
+      },
+    });
+  }
+}
+
+export async function logout(
+  req: Request, res: Response,
+) {
+  console.log("Cookies:", req.cookies);
+  const refreshToken = req.cookies.refreshToken;
+  await authService.logout(refreshToken);
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true, sameSite: "lax", path: "/auth",
+    secure: process.env.NODE_ENV === "production",
+  });
+
+  return res.status(204).send();
+}

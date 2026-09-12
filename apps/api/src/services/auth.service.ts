@@ -46,3 +46,76 @@ export async function login(
         },
     };
 }
+
+export async function refresh(refreshToken: string) {
+    const tokenHash = hashRefreshToken(refreshToken);
+
+    const storedToken = await prisma.refreshToken.findUnique({
+        where: {
+            tokenHash,
+        }, include: {
+            user: true,
+        },
+    });
+
+    if (!storedToken) {
+        throw new Error("INVALID_REFRESH_TOKEN");
+    }
+
+    if (storedToken.revokedAt) {
+        throw new Error("INVALID_REFRESH_TOKEN");
+    }
+
+    if (storedToken.expiresAt <= new Date()) {
+        throw new Error("INVALID_REFRESH_TOKEN");
+    }
+
+    const newRefreshToken = createRefreshToken();
+
+    const result = await prisma.$transaction(async (tx) => {
+        await tx.refreshToken.update({
+            where: {
+                id: storedToken.id,
+            }, data: {
+                revokedAt: new Date(),
+            },
+        });
+
+        await tx.refreshToken.create({
+            data: {
+                userId: storedToken.userId,
+                tokenHash: hashRefreshToken(newRefreshToken),
+                expiresAt: getRefreshTokenExpiry(),
+            },
+        });
+
+        const accessToken = createAccessToken({
+      id: storedToken.user.id,
+      email: storedToken.user.email,
+      role: storedToken.user.role,
+        });
+
+        return {
+      accessToken,
+      refreshToken: newRefreshToken,
+        };
+    });
+
+    return result;
+}
+
+export async function logout(refreshToken: string | undefined) {
+    if (!refreshToken) {
+        return;
+    }
+
+    const tokenHash = hashRefreshToken(refreshToken);
+
+    await prisma.refreshToken.updateMany({
+        where: {
+            tokenHash, revokedAt: null,
+        }, data: {
+            revokedAt: new Date(),
+        },
+    });
+}
