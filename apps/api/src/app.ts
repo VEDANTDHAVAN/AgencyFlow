@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import projectRoutes from "./routes/project.routes";
 import taskRoutes from "./routes/task.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(cookieParser());
 app.use("/auth", authRoutes);
 app.use("/projects", projectRoutes);
 app.use("/tasks", taskRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({

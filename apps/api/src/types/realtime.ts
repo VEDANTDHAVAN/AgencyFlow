@@ -10,3 +10,16 @@ export interface TaskStatusChangedEvent {
   newStatus: TaskStatus;
   createdAt: string;
 }
+
+export interface NotificationCreatedEvent {
+  eventId: string;
+  type: "NOTIFICATION_CREATED";
+  notificationType: "TASK_ASSIGNED" | "TASK_IN_REVIEW";
+  notificationId: string;
+  userId: string;
+  title: string;
+  message: string;
+  projectId?: string;
+  taskId?: string;
+  createdAt: string;
+}

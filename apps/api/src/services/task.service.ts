@@ -12,6 +12,7 @@ import type {
   UpdateTaskInput,
   UpdateTaskStatusInput,
 } from "../schemas/task.schema";
+import { createUserNotification } from "./notification.service";
 
 export async function getAllTasks(user: AuthUser) {
   if (user.role === "ADMIN") {
@@ -150,14 +151,25 @@ export async function createNewTask(
     }
   }
 
-  return createTask({
-    title: input.title,
-    description: input.description,
-    projectId: input.projectId,
-    assignedDeveloperId: input.assignedDeveloperId,
-    priority: input.priority,
-    dueDate: input.dueDate,
+  const task = await createTask({
+    title: input.title, description: input.description,
+    projectId: input.projectId, assignedDeveloperId: input.assignedDeveloperId,
+    priority: input.priority, dueDate: input.dueDate,
   });
+
+  let notification = null;
+
+  if (task.assignedDeveloperId) {
+    notification = await createUserNotification({
+      userId: task.assignedDeveloperId, type: "TASK_ASSIGNED",
+      title: "New task assigned", message: `You have been assigned the task "${task.title}".`,
+      projectId: task.projectId, taskId: task.id,
+    });
+  }
+
+  return {
+    task, notification,
+  };
 }
 
 export async function updateExistingTask(
@@ -249,10 +261,6 @@ export async function updateTaskStatus(
     throw new Error("TASK_NOT_FOUND");
   }
 
-  /*
-   * Authorization
-   */
-
   if (user.role === "DEVELOPER") {
     if (task.assignedDeveloperId !== user.id) {
       throw new Error("FORBIDDEN");
@@ -265,24 +273,31 @@ export async function updateTaskStatus(
     throw new Error("FORBIDDEN");
   }
 
-  /*
-   * Status transition validation
-   */
-
   const nextStatuses = allowedTransitions[task.status];
 
   if (!nextStatuses.includes(input.status)) {
     throw new Error("INVALID_STATUS_TRANSITION");
   }
 
-  /*
-   * Atomic status update + history + activity
-   */
-
-  return changeTaskStatus(
-    task.id,
-    user.id,
+  const result = await changeTaskStatus(
+    task.id, user.id,
     input.status,
     task.projectId,
   );
+
+  let notification = null;
+
+  if (
+    input.status === "IN_REVIEW" && task.assignedDeveloperId
+  ) {
+    notification = await createUserNotification({
+      userId: task.assignedDeveloperId, type: "TASK_IN_REVIEW",
+      title: "Task ready for review!", message: `The task "${(await result).task.title}" is ready for review!`,
+      projectId: task.projectId, taskId: task.id,
+    });
+  }
+
+  return {
+    ...result, notification,
+  }
 }

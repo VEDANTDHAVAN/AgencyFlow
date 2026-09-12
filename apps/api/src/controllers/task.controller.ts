@@ -8,6 +8,8 @@ import {
   createTaskSchema, updateTaskSchema,
   updateTaskStatusSchema,
 } from "../schemas/task.schema";
+import { getUnreadNotificationCount, createUserNotification } from "../services/notification.service";
+import { emitNotification } from "../websocket/notification-events";
 
 export async function listTasks(
   req: Request, res: Response,
@@ -100,13 +102,23 @@ export async function create(
   }
 
   try {
-    const task = await createNewTask(
+    const result = await createNewTask(
       req.user!,
       parsed.data,
     );
 
+    const io = req.app.get("io");
+
+    if(result.notification) {
+      const unreadCount = await getUnreadNotificationCount(req.user!.id);
+
+      emitNotification(
+        io, result.notification, unreadCount,
+      );
+    }
+
     return res.status(201).json({
-      data: task,
+      data: result,
     });
   } catch (error) {
     if (
@@ -273,17 +285,32 @@ export async function updateStatus(
     
     const room = `task:${result.activity.taskId}`;
 
-    const event = {
+    const taskEvent = {
       eventId: result.activity.id, type: "TASK_STATUS_CHANGED" as const,
       projectId: result.activity.projectId, taskId: result.activity.taskId,
       actorId: result.activity.actorId, previousStatus: result.activity.oldValue,
       newStatus: result.activity.newValue, createdAt: result.activity.createdAt.toISOString(),
     };
 
-    io.to(room).emit("task:status-changed", event);
+    io.to(room).emit("task:status-changed", taskEvent);
+
+    // 2. Emit Notification if one was created
+    if (result.notification) {
+      const unreadCount = await getUnreadNotificationCount(
+      result.notification.userId,
+      );
+
+      emitNotification(
+        io, result.notification, unreadCount,
+      );
+    }
 
     return res.json({
-      data: result,
+      data: {
+        task: result.task,
+        history: result.history,
+        activity: result.activity,
+      },
     });
   } catch (error) {
     if (

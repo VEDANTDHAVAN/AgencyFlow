@@ -44,3 +44,15 @@ socket.on("connect_error", (error) => {
 socket.on("disconnect", (reason) => {
   console.log("DISCONNECTED:", reason);
 });
+
+socket.on("notification:new", (event) => {
+  console.log("NOTIFICATION EVENT:", event);
+});
+
+socket.on("notification:unread-count", (event) => {
+  console.log("UNREAD COUNT EVENT:", event);
+});
+
+socket.on("presence:changed", (event) => {
+  console.log("PRESENCE EVENT:", event);
+});

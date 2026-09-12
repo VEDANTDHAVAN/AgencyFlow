@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { verifyAccessToken } from "../utils/tokens";
 import { canAccessProject, canAccessTask } from "../services/resourcelevelauth.service";
 import type { AuthUser } from "../types/auth";
+import { userConnected, userDisconnected } from "./presence";
 
 export function initializeSocket(
   httpServer: HttpServer,
@@ -60,6 +61,14 @@ export function initializeSocket(
 
     socket.join(`user:${user.id}`);
 
+    const becameOnline = userConnected(user.id);
+
+    if (becameOnline) {
+      io.emit("presence:changed", {
+        userId: user.id, online: true,
+      });
+    }
+
     socket.on(
       "project:join",
       async (projectId: unknown, callback) => {
@@ -110,6 +119,14 @@ export function initializeSocket(
         `Socket disconnected: ${user.email}`,
         reason,
       );
+
+      const becameOffline = userDisconnected(user.id);
+
+      if (becameOffline) {
+        io.emit("presence:changed", {
+          userId: user.id, online: false,
+        });
+      }
     });
 
     socket.on("task:join", async (taskId: unknown, callback) => {
