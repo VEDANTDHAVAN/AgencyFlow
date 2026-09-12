@@ -122,7 +122,6 @@ export async function refresh(
 export async function logout(
   req: Request, res: Response,
 ) {
-  console.log("Cookies:", req.cookies);
   const refreshToken = req.cookies.refreshToken;
   await authService.logout(refreshToken);
 
