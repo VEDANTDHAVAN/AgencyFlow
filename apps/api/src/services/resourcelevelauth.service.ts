@@ -60,3 +60,43 @@ export async function canAccessTask(
     }
     return false;
 }
+
+export async function canChangeTaskStatus(
+  user: AuthUser, taskId: string,
+): Promise<boolean> {
+  if (user.role === "ADMIN") {
+    return true;
+  }
+
+  if (user.role === "PROJECT_MANAGER") {
+    const task = await prisma.task.findFirst({
+      where: {
+        id: taskId,
+        project: {
+          createdById: user.id,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return Boolean(task);
+  }
+
+  if (user.role === "DEVELOPER") {
+    const task = await prisma.task.findFirst({
+      where: {
+        id: taskId,
+        assignedDeveloperId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return Boolean(task);
+  }
+
+  return false;
+}
