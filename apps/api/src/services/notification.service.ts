@@ -19,9 +19,9 @@ export async function getUserNotifications(
 }
 
 export async function getUnreadNotificationCount(
-  userId: string,
+  user: AuthUser,
 ) {
-  return countUnreadNotifications(userId);
+  return countUnreadNotifications(user.id);
 }
 
 export async function markNotificationRead(

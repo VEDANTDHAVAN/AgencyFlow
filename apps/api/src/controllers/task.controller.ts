@@ -110,7 +110,7 @@ export async function create(
     const io = req.app.get("io");
 
     if(result.notification) {
-      const unreadCount = await getUnreadNotificationCount(req.user!.id);
+      const unreadCount = await getUnreadNotificationCount(req.user!);
 
       emitNotification(
         io, result.notification, unreadCount,
@@ -297,7 +297,7 @@ export async function updateStatus(
     // 2. Emit Notification if one was created
     if (result.notification) {
       const unreadCount = await getUnreadNotificationCount(
-      result.notification.userId,
+      req.user!,
       );
 
       emitNotification(
