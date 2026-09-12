@@ -8,12 +8,15 @@ import {
 import { authenticate } from "../middleware/auth.middleware";
 import { requireRoles } from "../middleware/role.middleware";
 import { authorizeProject } from "../middleware/authorize";
+import { listProjectActivities } from "../controllers/activity.controller";
 
 const router = Router();
 
 router.use(authenticate);
 
 router.get("/", listProjects);
+
+router.get("/:id/activity", listProjectActivities);
 
 router.get(
   "/:id",
