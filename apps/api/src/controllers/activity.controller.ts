@@ -17,22 +17,43 @@ export async function listProjectActivities(
   }
 
   const rawLimit = req.query.limit;
+  const rawSince = req.query.since;
 
-  let limit = 20;
+  const limit = rawLimit === undefined ? 20 : Number(rawLimit);
 
-  if (typeof rawLimit === "string") {
-    const parsedLimit = Number(rawLimit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return res.status(400).json({
+      error: {
+        code: "INVALID_LIMIT",
+        message: "Limit must be an integer between 1 and 100",
+      },
+    });
+  }
 
-    if (!Number.isInteger(parsedLimit) || parsedLimit < 1) {
+  let since: Date | undefined;
+
+  if (rawSince !== undefined) {
+    if (typeof rawSince !== "string") {
       return res.status(400).json({
         error: {
-          code: "INVALID_LIMIT",
-          message: "Limit must be a positive integer",
+          code: "INVALID_SINCE",
+          message: "Since must be an ISO timestamp",
         },
       });
     }
 
-    limit = parsedLimit;
+    const parsedSince = new Date(rawSince);
+
+    if (Number.isNaN(parsedSince.getTime())) {
+      return res.status(400).json({
+        error: {
+          code: "INVALID_SINCE",
+          message: "Since must be a valid ISO timestamp",
+        },
+      });
+    }
+
+    since = parsedSince;
   }
 
   try {
@@ -40,16 +61,14 @@ export async function listProjectActivities(
       req.user!,
       projectId,
       limit,
+      since,
     );
 
-    return res.json({
-      data: activities,
+    return res.status(200).json({
+      activities,
     });
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === "FORBIDDEN"
-    ) {
+    if (error instanceof Error && error.message === "FORBIDDEN") {
       return res.status(403).json({
         error: {
           code: "FORBIDDEN",
@@ -58,11 +77,6 @@ export async function listProjectActivities(
       });
     }
 
-    return res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message: "Failed to fetch activity",
-      },
-    });
+    throw error;
   }
 }

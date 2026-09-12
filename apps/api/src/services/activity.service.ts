@@ -5,7 +5,7 @@ import { canAccessProject } from "./resourcelevelauth.service";
 export async function getProjectActivities(
   user: AuthUser,
   projectId: string,
-  limit = 20,
+  limit = 20, since?: Date,
 ) {
   const allowed = await canAccessProject(
     user,
@@ -17,7 +17,6 @@ export async function getProjectActivities(
   }
 
   return findProjectActivities(
-    projectId,
-    Math.min(Math.max(limit, 1), 100),
+    projectId, Math.min(Math.max(limit, 1), 100), since,
   );
 }

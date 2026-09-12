@@ -269,6 +269,19 @@ export async function updateStatus(
       parsed.data,
     );
 
+    const io = req.app.get("io");
+    
+    const room = `task:${result.activity.taskId}`;
+
+    const event = {
+      eventId: result.activity.id, type: "TASK_STATUS_CHANGED" as const,
+      projectId: result.activity.projectId, taskId: result.activity.taskId,
+      actorId: result.activity.actorId, previousStatus: result.activity.oldValue,
+      newStatus: result.activity.newValue, createdAt: result.activity.createdAt.toISOString(),
+    };
+
+    io.to(room).emit("task:status-changed", event);
+
     return res.json({
       data: result,
     });

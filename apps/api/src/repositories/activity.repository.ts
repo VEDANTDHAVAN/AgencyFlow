@@ -2,11 +2,13 @@ import { prisma } from "../config/prisma";
 
 export async function findProjectActivities(
   projectId: string,
-  limit = 20,
+  limit = 20, since?: Date,
 ) {
   return prisma.activity.findMany({
     where: {
-      projectId,
+      projectId, ...(since ? {
+        createdAt: {gt: since,},
+      } : {}),
     },
     include: {
       actor: {
