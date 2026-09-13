@@ -16,7 +16,7 @@ const envSchema = z.object({
 
   JWT_REFRESH_SECRET: z.string().min(32),
 
-  CLIENT_URL: z.string().url(),
+  FRONTEND_URL: z.string().url(),
 });
 
 export const env = envSchema.parse(process.env);
