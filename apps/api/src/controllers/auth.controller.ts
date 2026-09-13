@@ -3,6 +3,15 @@ import { loginSchema } from "../schemas/auth.schema";
 import * as authService from "../services/auth.service";
 import { prisma } from "../config/prisma";
 
+const isProduction = process.env.NODE_ENV === "production";
+const refreshCookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
+    path: "/auth",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 export async function login(
     req: Request, res: Response,
 ) {
@@ -22,11 +31,7 @@ export async function login(
             result.data.email, result.data.password,
         );
 
-        res.cookie("refreshToken", resultData.refreshToken, {
-            httpOnly: true, sameSite: "lax", path: "/auth",
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 7*24*60*60*1000,
-        });
+        res.cookie("refreshToken", resultData.refreshToken, refreshCookieOptions);
 
         return res.json({
             accessToken: resultData.accessToken, user: resultData.user,
@@ -101,10 +106,7 @@ export async function refresh(
   try {
     const result = await authService.refresh(refreshToken);
 
-    res.cookie("refreshToken", result.refreshToken, {
-      httpOnly: true, secure: process.env.NODE_ENV === "production",
-      sameSite: "lax", path: "/auth", maxAge: 7*24*60*60*1000,
-    });
+    res.cookie("refreshToken", result.refreshToken, refreshCookieOptions);
 
     return res.json({
       accessToken: result.accessToken,
@@ -126,8 +128,10 @@ export async function logout(
   await authService.logout(refreshToken);
 
   res.clearCookie("refreshToken", {
-    httpOnly: true, sameSite: "lax", path: "/auth",
-    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/auth",
+    secure: isProduction,
   });
 
   return res.status(204).send();

@@ -1,6 +1,11 @@
 import "dotenv/config";
 import { z } from "zod";
 
+const clientUrl = process.env.CLIENT_URL ?? process.env.FRONTEND_URL ?? "http://localhost:5173";
+if (!process.env.CLIENT_URL && process.env.FRONTEND_URL) {
+  process.env.CLIENT_URL = process.env.FRONTEND_URL;
+}
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])

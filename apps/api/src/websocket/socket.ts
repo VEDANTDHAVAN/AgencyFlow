@@ -8,9 +8,26 @@ import { userConnected, userDisconnected } from "./presence";
 export function initializeSocket(
   httpServer: HttpServer,
 ) {
+  const allowedOrigins = new Set(
+    [
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+      "http://localhost:5173",
+      "http://localhost:4173",
+      "http://localhost:3000",
+    ].filter((value): value is string => Boolean(value)),
+  );
+
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL ?? process.env.ALLOWED_ORIGINS,
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.has(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("Origin not allowed by Socket.IO CORS"));
+      },
       credentials: true,
     },
   });
