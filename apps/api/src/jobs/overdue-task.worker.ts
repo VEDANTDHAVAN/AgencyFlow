@@ -1,6 +1,11 @@
 import { Worker } from "bullmq";
 import { prisma } from "../config/prisma";
 import { env } from "../config/env";
+import IORedis from "ioredis";
+
+const redis = new IORedis(env.REDIS_URL, {
+  maxRetriesPerRequest: null,
+});
 
 const worker = new Worker(
   "overdue-tasks",
@@ -42,9 +47,7 @@ const worker = new Worker(
     };
   },
   {
-    connection: {
-      url: env.REDIS_URL,
-    },
+    connection: redis,
   },
 );
 
