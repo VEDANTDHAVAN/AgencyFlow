@@ -10,7 +10,9 @@ function moveContents(srcDir, destDir) {
   for (const item of items) {
     const from = path.join(srcDir, item);
     const to = path.join(destDir, item);
+    // If destination exists, remove it first (we're just normalizing emitted structure)
     if (fs.existsSync(to)) {
+      // remove recursively
       const stat = fs.statSync(to);
       if (stat.isDirectory()) {
         fs.rmSync(to, { recursive: true, force: true });
@@ -25,6 +27,7 @@ function moveContents(srcDir, destDir) {
 try {
   if (fs.existsSync(distSrc)) {
     moveContents(distSrc, distRoot);
+    // remove the now-empty src folder
     fs.rmSync(distSrc, { recursive: true, force: true });
     console.log('Normalized dist: moved dist/src/* -> dist/');
   } else {

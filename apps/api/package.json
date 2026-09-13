@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "worker": "tsx src/jobs/overdue-task.worker.ts",
+    "worker:prod": "node dist/jobs/overdue-task.worker.js",
     "build": "prisma generate && tsc -p tsconfig.json && node scripts/normalize-dist.js",
     "start": "node dist/server.js",
     "test": "vitest run",
