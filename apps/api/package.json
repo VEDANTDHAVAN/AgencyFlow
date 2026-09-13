@@ -2,12 +2,12 @@
   "name": "api",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "worker": "tsx src/jobs/overdue-task.worker.ts",
-    "build": "prisma generate && esbuild src/server.ts --bundle --platform=node --target=node22 --outfile=dist/server.js",
+    "worker:prod": "node dist/jobs/overdue-task.worker.js",
+    "build": "prisma generate && tsc -p tsconfig.json && node scripts/normalize-dist.js",
     "start": "node dist/server.js",
     "test": "vitest run",
     "prisma:generate": "prisma generate",
@@ -21,6 +21,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@prisma/client-runtime-utils": "7.10.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^6.3.4",
     "cookie-parser": "^1.4.7",
