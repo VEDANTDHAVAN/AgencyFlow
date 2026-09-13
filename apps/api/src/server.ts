@@ -16,6 +16,6 @@ scheduleOverdueTaskJob().catch((error) => {
   console.error("Failed to start overdue task scheduler:", error);
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`AgencyFlow API + WebSocket running on http://localhost:${PORT}`);
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`AgencyFlow API + WebSocket running on http://0.0.0.0:${PORT}`);
 });

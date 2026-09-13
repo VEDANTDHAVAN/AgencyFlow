@@ -3,7 +3,15 @@ import axios from "axios";
 import { io, type Socket } from "socket.io-client";
 import "./index.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_URL =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.DEV ? "http://localhost:4000" : undefined);
+
+if (!API_URL) {
+  throw new Error(
+    "Missing VITE_API_URL. Set the Railway API HTTPS URL in the Vercel production environment.",
+  );
+}
 
 type Role = "ADMIN" | "PROJECT_MANAGER" | "DEVELOPER";
 

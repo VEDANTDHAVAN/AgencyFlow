@@ -1,6 +1,11 @@
 import "dotenv/config";
 import { z } from "zod";
 
+const clientUrl = process.env.CLIENT_URL ?? process.env.FRONTEND_URL ?? "http://localhost:5173";
+if (!process.env.CLIENT_URL && process.env.FRONTEND_URL) {
+  process.env.CLIENT_URL = process.env.FRONTEND_URL;
+}
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -16,7 +21,7 @@ const envSchema = z.object({
 
   JWT_REFRESH_SECRET: z.string().min(32),
 
-  CLIENT_URL: z.string().url(),
+  CLIENT_URL: z.string().url().default(clientUrl),
 });
 
 export const env = envSchema.parse(process.env);
